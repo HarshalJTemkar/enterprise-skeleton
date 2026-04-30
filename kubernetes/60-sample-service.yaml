@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-service
+  namespace: enterprise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sample-service
+  template:
+    metadata:
+      labels:
+        app: sample-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "9100"
+    spec:
+      containers:
+        - name: sample-service
+          image: enterprise/sample-service:latest
+          ports:
+            - containerPort: 9100
+          envFrom:
+            - configMapRef: { name: enterprise-platform-config }
+            - secretRef:    { name: enterprise-platform-secrets }
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 9100 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 9100 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 384Mi }
+            limits:   { cpu: 500m, memory: 768Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-service
+  namespace: enterprise
+spec:
+  selector:
+    app: sample-service
+  ports:
+    - name: http
+      port: 9100
+      targetPort: 9100
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sample-service
+  namespace: enterprise
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: sample-service

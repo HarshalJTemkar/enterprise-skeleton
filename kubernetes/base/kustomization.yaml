@@ -1,0 +1,110 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: enterprise
+
+commonLabels:
+  app.kubernetes.io/part-of: enterprise-skeleton
+  app.kubernetes.io/managed-by: kustomize
+
+resources:
+  - ../00-namespace.yaml
+  - ../05-serviceaccounts.yaml
+  - ../10-configmap.yaml
+  - ../20-service-registry.yaml
+  - ../30-config-server.yaml
+  - ../40-auth-service.yaml
+  - ../50-api-gateway.yaml
+  - ../60-sample-service.yaml
+  - ../70-pdb.yaml
+  - ../80-network-policies.yaml
+  - ../90-ingress.yaml
+
+images:
+  - name: enterprise/api-gateway
+    newTag: latest
+  - name: enterprise/auth-service
+    newTag: latest
+  - name: enterprise/config-server
+    newTag: latest
+  - name: enterprise/service-registry
+    newTag: latest
+  - name: enterprise/sample-service
+    newTag: latest
+
+# Apply Pod-level securityContext + startupProbe + serviceAccountName + topology
+# spread across all Deployments via a strategic merge patch.
+patches:
+  - target: { kind: Deployment }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/securityContext
+        value:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+          seccompProfile: { type: RuntimeDefault }
+      - op: add
+        path: /spec/template/spec/automountServiceAccountToken
+        value: false
+      - op: add
+        path: /spec/template/spec/containers/0/securityContext
+        value:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: { drop: [ALL] }
+      - op: add
+        path: /spec/template/spec/containers/0/startupProbe
+        value:
+          httpGet: { path: /actuator/health/liveness, port: 0 }
+          failureThreshold: 30
+          periodSeconds: 5
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels: {}
+  - target: { kind: Deployment, name: api-gateway }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: api-gateway
+      - op: replace
+        path: /spec/template/spec/containers/0/startupProbe/httpGet/port
+        value: 8080
+  - target: { kind: Deployment, name: auth-service }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: auth-service
+      - op: replace
+        path: /spec/template/spec/containers/0/startupProbe/httpGet/port
+        value: 9000
+  - target: { kind: Deployment, name: config-server }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: config-server
+      - op: replace
+        path: /spec/template/spec/containers/0/startupProbe/httpGet/port
+        value: 8888
+  - target: { kind: Deployment, name: service-registry }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: service-registry
+      - op: replace
+        path: /spec/template/spec/containers/0/startupProbe/httpGet/port
+        value: 8761
+  - target: { kind: Deployment, name: sample-service }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: sample-service
+      - op: replace
+        path: /spec/template/spec/containers/0/startupProbe/httpGet/port
+        value: 9100

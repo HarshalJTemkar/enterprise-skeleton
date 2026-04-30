@@ -1,0 +1,109 @@
+services:
+  service-registry:
+    build:
+      context: ../service-registry
+      dockerfile: Dockerfile
+    image: enterprise/service-registry:${TAG:-latest}
+    container_name: service-registry
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${EUREKA_PROFILE:-standalone}
+      EUREKA_USER: eureka
+      EUREKA_PASSWORD: eureka
+      EUREKA_HOSTNAME: service-registry
+      EUREKA_SELF_PRESERVATION: "true"
+      LOG_STYLE: ${LOG_STYLE:-text}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u eureka:eureka http://localhost:8761/actuator/health/liveness | grep -q UP || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    networks: [enterprise]
+
+  config-server:
+    build:
+      context: ../config-server
+      dockerfile: Dockerfile
+    image: enterprise/config-server:${TAG:-latest}
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native,${SPRING_PROFILES_ACTIVE:-dev}
+      CONFIG_SERVER_USER: admin
+      CONFIG_SERVER_PASSWORD: admin
+      EUREKA_SERVICE_URL: http://eureka:eureka@service-registry:8761/eureka/
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fu", "admin:admin", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [enterprise]
+
+  auth-service:
+    build:
+      context: ../auth-service
+      dockerfile: Dockerfile
+    image: enterprise/auth-service:${TAG:-latest}
+    container_name: auth-service
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      CONFIG_SERVER_URI: http://config-server:8888
+      CONFIG_SERVER_USER: admin
+      CONFIG_SERVER_PASSWORD: admin
+      EUREKA_SERVICE_URL: http://eureka:eureka@service-registry:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me-1234}
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks: [enterprise]
+
+  sample-service:
+    build:
+      context: ../sample-service
+      dockerfile: Dockerfile
+    image: enterprise/sample-service:${TAG:-latest}
+    container_name: sample-service
+    ports:
+      - "9100:9100"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      CONFIG_SERVER_URI: http://config-server:8888
+      CONFIG_SERVER_USER: admin
+      CONFIG_SERVER_PASSWORD: admin
+      EUREKA_SERVICE_URL: http://eureka:eureka@service-registry:8761/eureka/
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks: [enterprise]
+
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    image: enterprise/api-gateway:${TAG:-latest}
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      CONFIG_SERVER_URI: http://config-server:8888
+      CONFIG_SERVER_USER: admin
+      CONFIG_SERVER_PASSWORD: admin
+      EUREKA_SERVICE_URL: http://eureka:eureka@service-registry:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me-1234}
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks: [enterprise]
+
+networks:
+  enterprise:
+    driver: bridge

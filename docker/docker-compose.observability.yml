@@ -1,0 +1,46 @@
+# Observability stack overlay — start with:
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up
+#
+# Adds Prometheus (metrics), Grafana (dashboards) and an OpenTelemetry collector
+# (traces) without touching the core service definitions.
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [enterprise]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      - prometheus
+    networks: [enterprise]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.108.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel/config.yaml"]
+    ports:
+      - "4317:4317"          # OTLP gRPC
+      - "4318:4318"          # OTLP HTTP
+    volumes:
+      - ./otel-collector.yaml:/etc/otel/config.yaml:ro
+    networks: [enterprise]
+
+networks:
+  enterprise:
+    external: true
+    name: enterprise-skeleton_enterprise

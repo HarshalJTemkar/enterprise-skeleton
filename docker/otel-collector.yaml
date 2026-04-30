@@ -1,0 +1,35 @@
+# OpenTelemetry Collector configuration for local development.
+# Receives OTLP traces over HTTP/4318 and gRPC/4317, then logs them.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+exporters:
+  debug:
+    verbosity: basic
+  # Uncomment to forward to a real backend (Tempo, Jaeger, Honeycomb, ...)
+  # otlp/tempo:
+  #   endpoint: tempo:4317
+  #   tls:
+  #     insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]

@@ -1,0 +1,44 @@
+# PodDisruptionBudgets: keep at least 1 replica available during voluntary disruptions.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+  namespace: enterprise
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service
+  namespace: enterprise
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: auth-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: config-server
+  namespace: enterprise
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: config-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: service-registry
+  namespace: enterprise
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: service-registry
