@@ -1,0 +1,201 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        # Apply a sane default retry policy to all routes (idempotent verbs only)
+        - name: Retry
+          args:
+            retries: 2
+            statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE,GATEWAY_TIMEOUT
+            methods: GET,HEAD,OPTIONS
+            backoff:
+              firstBackoff: 100ms
+              maxBackoff: 500ms
+              factor: 2
+              basedOnPreviousValue: false
+        # Default distributed rate limiting (Redis); keyed by client IP
+        # Can be overridden per-route for tighter throttling
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 100
+            redis-rate-limiter.burstCapacity: 200
+            redis-rate-limiter.requestedTokens: 1
+            key-resolver: "#{@ipKeyResolver}"
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            # When allow-credentials is needed, "*" is invalid; use patterns instead.
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      routes:
+        # Auth service - stricter throttling on sensitive endpoints
+        - id: auth-login
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/login
+          filters:
+            - StripPrefix=1
+            # Strict rate limit for login attempts: 5 per minute per IP
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: authLoginCB
+                fallbackUri: forward:/fallback
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+            # Moderate rate limit for auth operations: 30 per minute per IP
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 50
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: authServiceCB
+                fallbackUri: forward:/fallback
+        
+        # Sample service v1 routes
+        - id: sample-service-v1
+          uri: lb://sample-service
+          predicates:
+            - Path=/api/v1/sample/**
+            - Header=X-API-Version, v1|1|1\\..*
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: sampleServiceV1CB
+                fallbackUri: forward:/fallback
+            - AddRequestHeader=X-Resolved-API-Version, v1
+        
+        # Sample service v2 routes (future support)
+        - id: sample-service-v2
+          uri: lb://sample-service
+          predicates:
+            - Path=/api/v2/sample/**
+            - Header=X-API-Version, v2|2|2\\..*
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: sampleServiceV2CB
+                fallbackUri: forward:/fallback
+            - AddRequestHeader=X-Resolved-API-Version, v2
+        
+        # Sample service default (v1) - no version header
+        - id: sample-service-default
+          uri: lb://sample-service
+          predicates:
+            - Path=/api/v1/sample/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: sampleServiceCB
+                fallbackUri: forward:/fallback
+            - AddRequestHeader=X-Resolved-API-Version, v1
+        
+        # GraphQL endpoint with moderate throttling
+        - id: sample-service-graphql
+          uri: lb://sample-service
+          predicates:
+            - Path=/graphql,/graphql/**,/graphiql,/graphiql/**
+          filters:
+            # GraphQL can be expensive; moderate rate limiting
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: sampleGraphqlCB
+                fallbackUri: forward:/fallback
+
+# Register with Eureka and prefer IP (works better in containers)
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+
+# Expose the gateway endpoint so /actuator/gateway/routes is queryable
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,loggers,refresh,gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+# Gateway-specific configuration
+gateway:
+  # Throttling tiers for different endpoint categories
+  # Rates are in requests/second; burst is maximum concurrent requests
+  throttling:
+    critical:           # Critical endpoints (login, password reset, etc.)
+      replenish-rate: 5
+      burst-capacity: 10
+    sensitive:          # Auth-related operations (token refresh, user registration)
+      replenish-rate: 30
+      burst-capacity: 50
+    standard:           # Standard API endpoints
+      replenish-rate: 100
+      burst-capacity: 200
+    graphql:            # GraphQL endpoints (can be expensive queries)
+      replenish-rate: 20
+      burst-capacity: 40
+    public-api:         # Public/unauthenticated endpoints
+      replenish-rate: 50
+      burst-capacity: 100
+  
+  security:
+    jwt:
+      enabled: true
+      # Endpoints that do NOT require a valid JWT
+      public-paths:
+        - /api/auth/login
+        - /api/auth/refresh
+        - /api/auth/register
+        - /actuator/health
+        - /actuator/health/**
+        - /actuator/info
+        - /actuator/prometheus
+        - /fallback/**
+        - /graphiql
+        - /graphiql/**
+        - /v3/api-docs/**
+        - /swagger-ui/**
+        - /swagger-ui.html

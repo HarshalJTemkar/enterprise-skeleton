@@ -1,0 +1,101 @@
+server:
+  port: ${AUTH_SERVICE_PORT:9000}
+
+spring:
+  application:
+    name: auth-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  threads:
+    virtual:
+      enabled: ${SPRING_THREADS_VIRTUAL_ENABLED:true}
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+  cloud:
+    config:
+      username: ${CONFIG_SERVER_USER:admin}
+      password: ${CONFIG_SERVER_PASSWORD:admin}
+      fail-fast: false
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL:http://eureka:eureka@localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Fallback values in case Config Server is unreachable:
+enterprise:
+  common:
+    security:
+      enabled: true
+    jwt:
+      secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-1234}
+
+auth:
+  # In-memory users have been replaced by JPA-backed users (see UserEntity /
+  # JpaUserDetailsService). Default seeded credentials:
+  #   admin / admin   →  ROLE_ADMIN, ROLE_USER
+  #   user  / user    →  ROLE_USER
+  lockout:
+    max-attempts: ${AUTH_LOCKOUT_MAX_ATTEMPTS:5}
+    duration: ${AUTH_LOCKOUT_DURATION:PT15M}
+  refresh-tokens:
+    cleanup-cron: ${AUTH_REFRESH_CLEANUP_CRON:0 0 3 * * *}
+
+resilience4j:
+  ratelimiter:
+    instances:
+      auth-login:
+        limit-for-period: ${AUTH_LOGIN_RPS:10}
+        limit-refresh-period: 1s
+        timeout-duration: 0
+
+# ----------------------------------------------------------------
+# Datasource (default: in-memory H2 for local dev).
+# Override DB_URL / DB_USER / DB_PASSWORD to point at PostgreSQL etc.
+# ----------------------------------------------------------------
+spring.datasource:
+  url: ${DB_URL:jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+  username: ${DB_USER:sa}
+  password: ${DB_PASSWORD:}
+  driver-class-name: ${DB_DRIVER:org.h2.Driver}
+spring.jpa:
+  hibernate:
+    ddl-auto: validate           # Flyway owns the schema
+  properties:
+    hibernate.format_sql: true
+  open-in-view: false
+spring.flyway:
+  enabled: true
+  locations: classpath:db/migration
+  baseline-on-migrate: true
+spring.h2.console:
+  enabled: true
+  path: /h2-console
+
+# ----------------------------------------------------------------
+# Demo scheduler jobs (from DemoScheduler). Fully disable with:
+#   demo.scheduler.enabled=false
+# ----------------------------------------------------------------
+demo:
+  scheduler:
+    enabled: true
+    initial-delay: PT5S
+    fixed-delay: PT30S
+    cron: "0 * * * * *"

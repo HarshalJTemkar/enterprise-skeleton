@@ -1,0 +1,52 @@
+scalar DateTime
+scalar UUID
+scalar JSON
+
+# ----- Common envelope, mirrors REST ApiResponse -----
+type WhoAmI {
+    subject: String!
+    roles: String!
+    correlationId: String
+}
+
+type Order {
+    orderId: String!
+    createdBy: String!
+    product: String!
+    quantity: Int!
+}
+
+type WhoAmIEnvelope {
+    status: String!
+    data: WhoAmI
+    message: String
+    correlationId: String
+    timestamp: DateTime!
+    warnings: [String!]
+    extensions: JSON
+}
+
+type OrderEnvelope {
+    status: String!
+    data: Order
+    message: String
+    correlationId: String
+    timestamp: DateTime!
+    warnings: [String!]
+    extensions: JSON
+}
+
+input CreateOrderInput {
+    product: String!
+    quantity: Int!
+}
+
+type Query {
+    "Echo the gateway-propagated identity (X-Auth-Subject / X-Auth-Roles)."
+    whoAmI(subject: String, roles: String): WhoAmIEnvelope!
+}
+
+type Mutation {
+    "Create an order. Idempotent under the same Idempotency-Key header."
+    createOrder(input: CreateOrderInput!, subject: String): OrderEnvelope!
+}

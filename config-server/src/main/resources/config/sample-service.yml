@@ -1,0 +1,6 @@
+# Per-service overrides served by Spring Cloud Config to sample-service.
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 25s

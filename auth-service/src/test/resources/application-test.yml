@@ -1,0 +1,42 @@
+# Test profile overrides for auth-service.
+# Uses an in-memory H2 DB and disables external integrations.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:authdb-test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+    bus:
+      enabled: false
+  config:
+    import: ""
+
+eureka:
+  client:
+    enabled: false
+
+# Disable resource-server JWT validation in tests; @WithMockJwtUser handles auth.
+# But still enable the JWT helper (token provider) — AuthService needs it.
+enterprise:
+  common:
+    security:
+      enabled: true                # exposes JwtTokenProvider bean
+      resource-server:
+        enabled: false             # don't validate inbound tokens during tests
+    jwt:
+      secret: "test-test-test-test-test-test-test-test-test-1234"

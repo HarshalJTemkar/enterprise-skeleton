@@ -1,0 +1,16 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    bootstrap:
+      enabled: false
+  config:
+    import: ""
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+management:
+  tracing:
+    enabled: false

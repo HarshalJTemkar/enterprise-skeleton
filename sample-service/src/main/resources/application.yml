@@ -1,0 +1,60 @@
+server:
+  port: ${SAMPLE_SERVICE_PORT:9100}
+
+spring:
+  application:
+    name: sample-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  threads:
+    virtual:
+      enabled: ${SPRING_THREADS_VIRTUAL_ENABLED:true}
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+  cloud:
+    config:
+      username: ${CONFIG_SERVER_USER:admin}
+      password: ${CONFIG_SERVER_PASSWORD:admin}
+      fail-fast: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL:http://eureka:eureka@localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+# common-lib feature toggles (security disabled: identity comes from gateway headers)
+enterprise:
+  common:
+    security:
+      enabled: false
+    graphql:
+      enabled: true
+      max-query-depth: 12
+      max-query-complexity: 150
+      introspection:
+        enabled: ${GRAPHQL_INTROSPECTION:true}    # disable in production!
+      error-mapping:
+        enabled: true
+        expose-message: true
+
+spring.graphql:
+  schema:
+    locations: classpath:/graphql/
+    file-extensions: .graphqls,.gqls
+    introspection:
+      enabled: ${GRAPHQL_INTROSPECTION:true}
+  graphiql:
+    enabled: ${GRAPHIQL_ENABLED:true}
+    path: /graphiql
+  path: /graphql
+
+logging:
+  style: ${LOG_STYLE:text}

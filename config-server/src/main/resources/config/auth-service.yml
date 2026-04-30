@@ -1,0 +1,22 @@
+server:
+  port: ${AUTH_SERVICE_PORT:9000}
+
+enterprise:
+  common:
+    security:
+      enabled: true
+    jwt:
+      secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-1234}
+      access-token-ttl: PT1H
+      refresh-token-ttl: P7D
+      issuer: enterprise-platform
+
+auth:
+  # In-memory demo users; replace with DB in production
+  users:
+    - username: admin
+      password: "{noop}admin"
+      roles: [ADMIN, USER]
+    - username: user
+      password: "{noop}user"
+      roles: [USER]
