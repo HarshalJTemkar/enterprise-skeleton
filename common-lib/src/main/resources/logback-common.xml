@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shared Logback configuration.
+
+  Services inherit this by including it from their own logback-spring.xml:
+      <include resource="logback-common.xml" />
+
+  The JSON encoder is only activated when the Spring property
+  ${LOG_STYLE:-text} equals "json" (or when the logstash-logback-encoder
+  is on the classpath and ${LOG_STYLE} is not set).
+
+  MDC keys surfaced into every log line:
+    correlationId, requestId, requestPath, userId, tenantId
+-->
+<included>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="app"/>
+    <springProperty scope="context" name="logStyle" source="logging.style" defaultValue="text"/>
+
+    <!-- Plain text appender (human-readable). -->
+    <appender name="CONSOLE_TEXT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] [corrId=%X{correlationId:-} reqId=%X{requestId:-} path=%X{requestPath:-}] %logger{40} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- JSON appender (structured logs, suitable for ELK / Loki / Datadog). -->
+    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>requestPath</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>tenantId</includeMdcKeyName>
+            <customFields>{"service":"${appName}"}</customFields>
+            <timeZone>UTC</timeZone>
+        </encoder>
+    </appender>
+
+    <!-- Root switches between text / json based on logging.style. -->
+    <root level="INFO">
+        <if condition='"json".equals(property("logStyle"))'>
+            <then><appender-ref ref="CONSOLE_JSON"/></then>
+            <else><appender-ref ref="CONSOLE_TEXT"/></else>
+        </if>
+    </root>
+
+    <!-- Useful default levels; override in each service's application.yml -->
+    <logger name="com.enterprise" level="DEBUG"/>
+    <logger name="ACCESS" level="INFO"/>
+    <logger name="AUDIT" level="INFO"/>
+</included>
