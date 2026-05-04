@@ -67,5 +67,10 @@ spring:
   config:
     activate:
       on-profile: prod
-  profiles:
-    include: git
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${CONFIG_GIT_URI:https://github.com/your-org/your-config-repo.git}
+          default-label: ${CONFIG_GIT_BRANCH:main}
+          clone-on-start: true

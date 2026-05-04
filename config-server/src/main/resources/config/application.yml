@@ -24,7 +24,7 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,db,redis,diskSpace,ping
+          include: readinessState,diskSpace,ping
   info:
     git:
       mode: full
@@ -54,6 +54,8 @@ logging:
   level:
     root: INFO
     com.enterprise: ${LOG_LEVEL_APP:INFO}
+    ACCESS: INFO
+    AUDIT: INFO
 
 info:
   app:
@@ -73,6 +75,14 @@ enterprise:
         allowed-headers: "*"
     security:
       enabled: false
+      password-encoder:
+        enabled: true
+        bcrypt-only: false
+        bcrypt-strength: 10
+      # Per-service JWT validation filter. Off by default — services that
+      # accept tokens directly (i.e. bypass the gateway) flip this to true.
+      resource-server:
+        enabled: false
     jwt:
       secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-1234}
       access-token-ttl: PT1H
@@ -210,18 +220,6 @@ enterprise:
     info:
       enabled: true
 
-    # Password encoder defaults
-    security:
-      enabled: false
-      password-encoder:
-        enabled: true
-        bcrypt-only: false
-        bcrypt-strength: 10
-      # Per-service JWT validation filter. Off by default — services that
-      # accept tokens directly (i.e. bypass the gateway) flip this to true.
-      resource-server:
-        enabled: false
-
     # JPA auditing (createdBy / updatedBy auto-population)
     jpa:
       auditing:
@@ -273,15 +271,6 @@ feature:
     header-name: Idempotency-Key
     ttl: PT10M
     key-prefix: "idempotency:"
-
-# Structured logging style – set to "json" in prod (uses logstash encoder)
-logging:
-  style: ${LOG_STYLE:text}
-  level:
-    root: INFO
-    com.enterprise: DEBUG
-    ACCESS: INFO
-    AUDIT: INFO
 
 # Native Resilience4j instance names also resolve to the same "default"
 resilience4j:
