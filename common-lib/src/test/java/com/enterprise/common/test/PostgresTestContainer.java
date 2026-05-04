@@ -6,7 +6,8 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * Reusable PostgreSQL Testcontainer wrapper.
  *
- * <p>Use as a static field:</p>
+ * <p>Use as a static field:
+ *
  * <pre>{@code
  * @Testcontainers
  * class MyIT {
@@ -22,34 +23,34 @@ import org.testcontainers.utility.DockerImageName;
  * }
  * }</pre>
  *
- * <p>The {@code stop()} override is a no-op so JUnit doesn't kill the
- * container between tests when reused as a singleton.</p>
+ * <p>The {@code stop()} override is a no-op so JUnit doesn't kill the container between tests when
+ * reused as a singleton.
  */
 public class PostgresTestContainer extends PostgreSQLContainer<PostgresTestContainer> {
 
-    private static final DockerImageName IMAGE = DockerImageName.parse("postgres:16-alpine");
-    private static PostgresTestContainer INSTANCE;
+  private static final DockerImageName IMAGE = DockerImageName.parse("postgres:16-alpine");
+  private static PostgresTestContainer INSTANCE;
 
-    private PostgresTestContainer() {
-        super(IMAGE);
-        withDatabaseName("test");
-        withUsername("test");
-        withPassword("test");
-        withReuse(true);
-    }
+  private PostgresTestContainer() {
+    super(IMAGE);
+    withDatabaseName("test");
+    withUsername("test");
+    withPassword("test");
+    withReuse(true);
+  }
 
-    /** Singleton accessor — shares one container across all tests in a JVM. */
-    public static synchronized PostgresTestContainer getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new PostgresTestContainer();
-            INSTANCE.start();
-        }
-        return INSTANCE;
+  /** Singleton accessor — shares one container across all tests in a JVM. */
+  public static synchronized PostgresTestContainer getInstance() {
+    if (INSTANCE == null) {
+      INSTANCE = new PostgresTestContainer();
+      INSTANCE.start();
     }
+    return INSTANCE;
+  }
 
-    /** Disable per-test stop; JVM shutdown hook handles cleanup. */
-    @Override
-    public void stop() {
-        // intentional no-op for the singleton pattern
-    }
+  /** Disable per-test stop; JVM shutdown hook handles cleanup. */
+  @Override
+  public void stop() {
+    // intentional no-op for the singleton pattern
+  }
 }
