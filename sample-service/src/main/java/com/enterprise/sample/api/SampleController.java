@@ -19,10 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
  * Demonstrates how a downstream microservice consumes the platform:
  *
  * <ul>
- *   <li>Returns the canonical {@link ApiResponse} envelope.</li>
- *   <li>Trusts {@code X-Auth-Subject} / {@code X-Auth-Roles} headers
- *   forwarded by the API gateway (never validates a JWT itself).</li>
- *   <li>Showcases {@code @Idempotent} on {@code POST /orders}.</li>
+ *   <li>Returns the canonical {@link ApiResponse} envelope.
+ *   <li>Trusts {@code X-Auth-Subject} / {@code X-Auth-Roles} headers forwarded by the API gateway
+ *       (never validates a JWT itself).
+ *   <li>Showcases {@code @Idempotent} on {@code POST /orders}.
  * </ul>
  */
 @RestController
@@ -30,34 +30,36 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Sample")
 public class SampleController {
 
-    @GetMapping("/whoami")
-    @Operation(summary = "Echo the gateway-propagated identity headers")
-    public ApiResponse<WhoAmI> whoAmI(
-            @RequestHeader(value = "X-Auth-Subject", required = false) String subject,
-            @RequestHeader(value = "X-Auth-Roles", required = false) String roles,
-            HttpServletRequest req) {
-        return ApiResponse.ok(new WhoAmI(
-                subject == null ? "anonymous" : subject,
-                roles == null ? "[]" : roles,
-                req.getHeader("X-Correlation-ID")));
-    }
+  @GetMapping("/whoami")
+  @Operation(summary = "Echo the gateway-propagated identity headers")
+  public ApiResponse<WhoAmI> whoAmI(
+      @RequestHeader(value = "X-Auth-Subject", required = false) String subject,
+      @RequestHeader(value = "X-Auth-Roles", required = false) String roles,
+      HttpServletRequest req) {
+    return ApiResponse.ok(
+        new WhoAmI(
+            subject == null ? "anonymous" : subject,
+            roles == null ? "[]" : roles,
+            req.getHeader("X-Correlation-ID")));
+  }
 
-    @PostMapping("/orders")
-    @Idempotent(name = "sample-create-order")
-    @Operation(summary = "Idempotent order creation (replay-safe via Idempotency-Key header)")
-    public ApiResponse<OrderCreated> createOrder(@Valid @RequestBody CreateOrder body,
-                                                 @RequestHeader(value = "X-Auth-Subject",
-                                                         required = false) String subject) {
-        return ApiResponse.ok(new OrderCreated(
-                UUID.randomUUID().toString(),
-                subject == null ? "anonymous" : subject,
-                body.product(),
-                body.quantity()));
-    }
+  @PostMapping("/orders")
+  @Idempotent(name = "sample-create-order")
+  @Operation(summary = "Idempotent order creation (replay-safe via Idempotency-Key header)")
+  public ApiResponse<OrderCreated> createOrder(
+      @Valid @RequestBody CreateOrder body,
+      @RequestHeader(value = "X-Auth-Subject", required = false) String subject) {
+    return ApiResponse.ok(
+        new OrderCreated(
+            UUID.randomUUID().toString(),
+            subject == null ? "anonymous" : subject,
+            body.product(),
+            body.quantity()));
+  }
 
-    public record WhoAmI(String subject, String roles, String correlationId) {}
+  public record WhoAmI(String subject, String roles, String correlationId) {}
 
-    public record CreateOrder(@NotBlank String product, int quantity) {}
+  public record CreateOrder(@NotBlank String product, int quantity) {}
 
-    public record OrderCreated(String orderId, String createdBy, String product, int quantity) {}
+  public record OrderCreated(String orderId, String createdBy, String product, int quantity) {}
 }

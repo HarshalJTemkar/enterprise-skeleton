@@ -7,14 +7,16 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(c -> c.disable())
-            .authorizeHttpRequests(a -> a
-                .requestMatchers("/actuator/**", "/eureka/**").permitAll()
-                .anyRequest().authenticated())
-            .httpBasic(b -> {});
-        return http.build();
-    }
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http.csrf(c -> c.disable())
+        .authorizeHttpRequests(
+            a ->
+                a.requestMatchers("/actuator/**", "/eureka/**")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .httpBasic(b -> {});
+    return http.build();
+  }
 }

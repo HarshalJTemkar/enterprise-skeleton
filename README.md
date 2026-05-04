@@ -28,6 +28,9 @@ enterprise-skeleton/
 | On-call runbook    | [`docs/runbook.md`](docs/runbook.md)                  |
 | Security model     | [`docs/security.md`](docs/security.md)                |
 | Decision records   | [`docs/adr/`](docs/adr/)                              |
+| Contributing       | [`CONTRIBUTING.md`](CONTRIBUTING.md)                  |
+| Vulnerability disc.| [`SECURITY.md`](SECURITY.md)                          |
+| Release notes      | [`CHANGELOG.md`](CHANGELOG.md)                        |
 
 ---
 
