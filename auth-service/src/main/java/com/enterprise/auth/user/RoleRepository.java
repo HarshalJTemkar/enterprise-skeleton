@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Repository for {@link RoleEntity}. */
 public interface RoleRepository extends JpaRepository<RoleEntity, Long> {
 
-    /** Find a role by case-sensitive name (e.g. {@code "ADMIN"}). */
-    Optional<RoleEntity> findByName(String name);
+  /** Find a role by case-sensitive name (e.g. {@code "ADMIN"}). */
+  Optional<RoleEntity> findByName(String name);
 }

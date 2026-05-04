@@ -11,11 +11,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 public class AuthManagerConfig {
 
-    @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService uds, PasswordEncoder encoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(uds);
-        provider.setPasswordEncoder(encoder);
-        return new ProviderManager(provider);
-    }
+  @Bean
+  public AuthenticationManager authenticationManager(
+      UserDetailsService uds, PasswordEncoder encoder) {
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    provider.setUserDetailsService(uds);
+    provider.setPasswordEncoder(encoder);
+    return new ProviderManager(provider);
+  }
 }

@@ -9,13 +9,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Long> {
 
-    Optional<RefreshTokenEntity> findByTokenHash(String tokenHash);
+  Optional<RefreshTokenEntity> findByTokenHash(String tokenHash);
 
-    @Modifying
-    @Query("update RefreshTokenEntity t set t.revoked = true where t.username = :username and t.revoked = false")
-    int revokeAllForUser(@Param("username") String username);
+  @Modifying
+  @Query(
+      "update RefreshTokenEntity t set t.revoked = true where t.username = :username and t.revoked = false")
+  int revokeAllForUser(@Param("username") String username);
 
-    @Modifying
-    @Query("delete from RefreshTokenEntity t where t.expiresAt < :cutoff")
-    int deleteExpired(@Param("cutoff") Instant cutoff);
+  @Modifying
+  @Query("delete from RefreshTokenEntity t where t.expiresAt < :cutoff")
+  int deleteExpired(@Param("cutoff") Instant cutoff);
 }

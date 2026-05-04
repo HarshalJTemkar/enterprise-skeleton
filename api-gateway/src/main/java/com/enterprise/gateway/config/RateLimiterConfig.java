@@ -3,6 +3,7 @@ package com.enterprise.gateway.config;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import reactor.core.publisher.Mono;
 
 /**
@@ -17,6 +18,7 @@ public class RateLimiterConfig {
 
   /** Key resolver: rate-limit per client IP. */
   @Bean(name = "ipKeyResolver")
+  @Primary
   public KeyResolver ipKeyResolver() {
     return exchange -> {
       var address = exchange.getRequest().getRemoteAddress();

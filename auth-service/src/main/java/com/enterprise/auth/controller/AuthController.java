@@ -25,34 +25,35 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication")
 public class AuthController {
 
-    private final AuthService authService;
+  private final AuthService authService;
 
-    @PostMapping("/login")
-    @Operation(summary = "Authenticate user and issue JWT tokens (rate-limited, lockout after N failures)")
-    public ApiResponse<TokenResponse> login(@Valid @RequestBody LoginRequest req,
-                                            HttpServletRequest http) {
-        return ApiResponse.ok(authService.login(req, http));
-    }
+  @PostMapping("/login")
+  @Operation(
+      summary = "Authenticate user and issue JWT tokens (rate-limited, lockout after N failures)")
+  public ApiResponse<TokenResponse> login(
+      @Valid @RequestBody LoginRequest req, HttpServletRequest http) {
+    return ApiResponse.ok(authService.login(req, http));
+  }
 
-    @PostMapping("/refresh")
-    @Operation(summary = "Rotate refresh token: revokes the supplied token and issues a new pair")
-    public ApiResponse<TokenResponse> refresh(@Valid @RequestBody RefreshRequest req,
-                                              HttpServletRequest http) {
-        return ApiResponse.ok(authService.refresh(req.refreshToken(), http));
-    }
+  @PostMapping("/refresh")
+  @Operation(summary = "Rotate refresh token: revokes the supplied token and issues a new pair")
+  public ApiResponse<TokenResponse> refresh(
+      @Valid @RequestBody RefreshRequest req, HttpServletRequest http) {
+    return ApiResponse.ok(authService.refresh(req.refreshToken(), http));
+  }
 
-    @PostMapping("/logout")
-    @Operation(summary = "Revoke a single refresh token")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@Valid @RequestBody LogoutRequest req) {
-        authService.logout(req.refreshToken());
-    }
+  @PostMapping("/logout")
+  @Operation(summary = "Revoke a single refresh token")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void logout(@Valid @RequestBody LogoutRequest req) {
+    authService.logout(req.refreshToken());
+  }
 
-    @PostMapping("/logout/all")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Revoke ALL refresh tokens for the authenticated principal")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logoutAll(@AuthenticationPrincipal UserDetails principal) {
-        authService.logoutAll(principal.getUsername());
-    }
+  @PostMapping("/logout/all")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "Revoke ALL refresh tokens for the authenticated principal")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void logoutAll(@AuthenticationPrincipal UserDetails principal) {
+    authService.logoutAll(principal.getUsername());
+  }
 }
