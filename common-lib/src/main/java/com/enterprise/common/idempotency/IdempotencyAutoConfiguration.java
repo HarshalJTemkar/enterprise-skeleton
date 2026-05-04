@@ -11,29 +11,33 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * Registers the idempotency store + aspect. Active only when:
+ *
  * <ul>
- *   <li>{@code feature.idempotency.enabled=true}</li>
- *   <li>{@link StringRedisTemplate} and AspectJ are on the classpath</li>
+ *   <li>{@code feature.idempotency.enabled=true}
+ *   <li>{@link StringRedisTemplate} and AspectJ are on the classpath
  * </ul>
  */
 @Configuration
 @ConditionalOnClass({Aspect.class, StringRedisTemplate.class})
-@ConditionalOnProperty(prefix = "feature.idempotency", name = "enabled",
-        havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(
+    prefix = "feature.idempotency",
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = false)
 @EnableConfigurationProperties(IdempotencyProperties.class)
 public class IdempotencyAutoConfiguration {
 
-    /** Redis-backed default implementation. */
-    @Bean
-    @ConditionalOnMissingBean
-    public IdempotencyStore idempotencyStore(StringRedisTemplate redis, IdempotencyProperties props) {
-        return new RedisIdempotencyStore(redis, props.getKeyPrefix());
-    }
+  /** Redis-backed default implementation. */
+  @Bean
+  @ConditionalOnMissingBean
+  public IdempotencyStore idempotencyStore(StringRedisTemplate redis, IdempotencyProperties props) {
+    return new RedisIdempotencyStore(redis, props.getKeyPrefix());
+  }
 
-    /** AOP aspect wrapping every {@code @Idempotent} method. */
-    @Bean
-    @ConditionalOnMissingBean
-    public IdempotencyAspect idempotencyAspect(IdempotencyStore store, IdempotencyProperties props) {
-        return new IdempotencyAspect(store, props);
-    }
+  /** AOP aspect wrapping every {@code @Idempotent} method. */
+  @Bean
+  @ConditionalOnMissingBean
+  public IdempotencyAspect idempotencyAspect(IdempotencyStore store, IdempotencyProperties props) {
+    return new IdempotencyAspect(store, props);
+  }
 }

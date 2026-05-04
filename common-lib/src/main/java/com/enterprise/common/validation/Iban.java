@@ -15,15 +15,17 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = Iban.Validator.class)
 public @interface Iban {
-    String message() default "must be a valid IBAN";
-    Class<?>[] groups() default {};
-    Class<? extends Payload>[] payload() default {};
+  String message() default "must be a valid IBAN";
 
-    /** Implementation kept nested for easy discovery. */
-    class Validator implements ConstraintValidator<Iban, String> {
-        @Override
-        public boolean isValid(String value, ConstraintValidatorContext context) {
-            return value == null || value.isBlank() || ValidationUtils.isIban(value);
-        }
+  Class<?>[] groups() default {};
+
+  Class<? extends Payload>[] payload() default {};
+
+  /** Implementation kept nested for easy discovery. */
+  class Validator implements ConstraintValidator<Iban, String> {
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+      return value == null || value.isBlank() || ValidationUtils.isIban(value);
     }
+  }
 }

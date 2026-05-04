@@ -9,31 +9,33 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
- * Enables Spring Data JPA auditing globally and registers a default
- * {@link AuditorAware} that returns the current authenticated username (or
- * {@code "system"}).
+ * Enables Spring Data JPA auditing globally and registers a default {@link AuditorAware} that
+ * returns the current authenticated username (or {@code "system"}).
  *
- * <p>Disabled when:</p>
+ * <p>Disabled when:
+ *
  * <ul>
- *   <li>Spring Data JPA is not on the classpath</li>
- *   <li>{@code enterprise.common.jpa.auditing.enabled=false}</li>
+ *   <li>Spring Data JPA is not on the classpath
+ *   <li>{@code enterprise.common.jpa.auditing.enabled=false}
  * </ul>
  *
- * <p>Apps that need a more elaborate auditor (e.g. tenant-aware) can simply
- * publish their own {@link AuditorAware} bean — the {@code @ConditionalOnMissingBean}
- * makes this one back off.</p>
+ * <p>Apps that need a more elaborate auditor (e.g. tenant-aware) can simply publish their own
+ * {@link AuditorAware} bean — the {@code @ConditionalOnMissingBean} makes this one back off.
  */
 @Configuration
 @ConditionalOnClass(name = "org.springframework.data.jpa.repository.config.EnableJpaAuditing")
-@ConditionalOnProperty(prefix = "enterprise.common.jpa.auditing", name = "enabled",
-        havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = "enterprise.common.jpa.auditing",
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 @EnableJpaAuditing(auditorAwareRef = "currentAuditorAware")
 public class JpaAuditingConfig {
 
-    /** The default {@link AuditorAware} backed by Spring Security context. */
-    @Bean
-    @ConditionalOnMissingBean
-    public AuditorAware<String> currentAuditorAware() {
-        return new CurrentAuditorAware();
-    }
+  /** The default {@link AuditorAware} backed by Spring Security context. */
+  @Bean
+  @ConditionalOnMissingBean
+  public AuditorAware<String> currentAuditorAware() {
+    return new CurrentAuditorAware();
+  }
 }

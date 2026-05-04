@@ -6,16 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Structured error envelope returned by {@code GlobalExceptionHandler}.
- * Also surfaces inside {@link org.springframework.http.ProblemDetail} as the
- * {@code "error"} member.
+ * Structured error envelope returned by {@code GlobalExceptionHandler}. Also surfaces inside {@link
+ * org.springframework.http.ProblemDetail} as the {@code "error"} member.
  */
 public record ErrorResponse(
-        String errorCode,
-        String message,
-        String correlationId,
-        Instant timestamp,
-        String path,
-        List<FieldViolation> errors,
-        Map<String, Object> details) {
-}
+    String errorCode,
+    String message,
+    String correlationId,
+    Instant timestamp,
+    String path,
+    List<FieldViolation> errors,
+    Map<String, Object> details) {}

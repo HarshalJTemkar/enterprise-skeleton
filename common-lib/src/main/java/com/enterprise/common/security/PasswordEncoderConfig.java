@@ -12,26 +12,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 /**
  * Registers a single shared {@link PasswordEncoder}.
  *
- * <p>When {@code enterprise.common.security.password-encoder.bcrypt-only=true}
- * a fixed BCrypt encoder is returned; otherwise Spring's delegating encoder
- * is used (supports {@code {bcrypt}, {noop}, {argon2}} and friends).</p>
+ * <p>When {@code enterprise.common.security.password-encoder.bcrypt-only=true} a fixed BCrypt
+ * encoder is returned; otherwise Spring's delegating encoder is used (supports {@code {bcrypt},
+ * {noop}, {argon2}} and friends).
  */
 @Configuration
 @ConditionalOnClass(PasswordEncoder.class)
 public class PasswordEncoderConfig {
 
-    /** The shared password encoder bean. */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "enterprise.common.security.password-encoder",
-            name = "enabled", havingValue = "true", matchIfMissing = true)
-    public PasswordEncoder passwordEncoder(
-            @org.springframework.beans.factory.annotation.Value(
-                    "${enterprise.common.security.password-encoder.bcrypt-only:false}") boolean bcryptOnly,
-            @org.springframework.beans.factory.annotation.Value(
-                    "${enterprise.common.security.password-encoder.bcrypt-strength:10}") int strength) {
-        return bcryptOnly
-                ? new BCryptPasswordEncoder(strength)
-                : PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
+  /** The shared password encoder bean. */
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnProperty(
+      prefix = "enterprise.common.security.password-encoder",
+      name = "enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  public PasswordEncoder passwordEncoder(
+      @org.springframework.beans.factory.annotation.Value(
+              "${enterprise.common.security.password-encoder.bcrypt-only:false}")
+          boolean bcryptOnly,
+      @org.springframework.beans.factory.annotation.Value(
+              "${enterprise.common.security.password-encoder.bcrypt-strength:10}")
+          int strength) {
+    return bcryptOnly
+        ? new BCryptPasswordEncoder(strength)
+        : PasswordEncoderFactories.createDelegatingPasswordEncoder();
+  }
 }

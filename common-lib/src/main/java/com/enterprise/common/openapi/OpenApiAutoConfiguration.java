@@ -17,57 +17,63 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Registers a single shared {@link OpenAPI} bean consumed by SpringDoc.
  *
- * <p>Active only when:</p>
+ * <p>Active only when:
+ *
  * <ul>
- *   <li>SpringDoc {@link OpenAPI} class is on the classpath</li>
- *   <li>{@code enterprise.common.openapi.enabled=true} (default)</li>
- *   <li>The application has not already defined its own {@link OpenAPI} bean</li>
+ *   <li>SpringDoc {@link OpenAPI} class is on the classpath
+ *   <li>{@code enterprise.common.openapi.enabled=true} (default)
+ *   <li>The application has not already defined its own {@link OpenAPI} bean
  * </ul>
  */
 @Configuration
 @ConditionalOnClass(OpenAPI.class)
-@ConditionalOnProperty(prefix = "enterprise.common.openapi", name = "enabled",
-        havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = "enterprise.common.openapi",
+    name = "enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 @EnableConfigurationProperties(OpenApiProperties.class)
 public class OpenApiAutoConfiguration {
 
-    /**
-     * Builds the shared OpenAPI descriptor from {@link OpenApiProperties}.
-     * If {@link OpenApiProperties#isJwtSecurityEnabled()} is true, a
-     * {@code bearerAuth} security scheme of type HTTP/JWT is also registered
-     * and applied globally.
-     *
-     * @param props externalized configuration bean
-     * @return the singleton OpenAPI document
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    public OpenAPI enterpriseOpenAPI(OpenApiProperties props) {
-        OpenAPI api = new OpenAPI().info(buildInfo(props));
+  /**
+   * Builds the shared OpenAPI descriptor from {@link OpenApiProperties}. If {@link
+   * OpenApiProperties#isJwtSecurityEnabled()} is true, a {@code bearerAuth} security scheme of type
+   * HTTP/JWT is also registered and applied globally.
+   *
+   * @param props externalized configuration bean
+   * @return the singleton OpenAPI document
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public OpenAPI enterpriseOpenAPI(OpenApiProperties props) {
+    OpenAPI api = new OpenAPI().info(buildInfo(props));
 
-        if (props.isJwtSecurityEnabled()) {
-            String name = props.getSecuritySchemeName();
-            api.addSecurityItem(new SecurityRequirement().addList(name))
-               .components(new Components().addSecuritySchemes(name,
-                       new SecurityScheme()
-                               .type(SecurityScheme.Type.HTTP)
-                               .scheme("bearer")
-                               .bearerFormat("JWT")
-                               .description("JWT access token issued by auth-service")));
-        }
-        return api;
+    if (props.isJwtSecurityEnabled()) {
+      String name = props.getSecuritySchemeName();
+      api.addSecurityItem(new SecurityRequirement().addList(name))
+          .components(
+              new Components()
+                  .addSecuritySchemes(
+                      name,
+                      new SecurityScheme()
+                          .type(SecurityScheme.Type.HTTP)
+                          .scheme("bearer")
+                          .bearerFormat("JWT")
+                          .description("JWT access token issued by auth-service")));
     }
+    return api;
+  }
 
-    /**
-     * Converts the property bean into an OpenAPI {@link Info} block (title,
-     * description, version, contact, license).
-     */
-    private Info buildInfo(OpenApiProperties p) {
-        return new Info()
-                .title(p.getTitle())
-                .description(p.getDescription())
-                .version(p.getVersion())
-                .contact(new Contact().name(p.getContactName()).email(p.getContactEmail()))
-                .license(new License().name(p.getLicenseName()).url(p.getLicenseUrl()));
-    }
+  /**
+   * Converts the property bean into an OpenAPI {@link Info} block (title, description, version,
+   * contact, license).
+   */
+  private Info buildInfo(OpenApiProperties p) {
+    return new Info()
+        .title(p.getTitle())
+        .description(p.getDescription())
+        .version(p.getVersion())
+        .contact(new Contact().name(p.getContactName()).email(p.getContactEmail()))
+        .license(new License().name(p.getLicenseName()).url(p.getLicenseUrl()));
+  }
 }
